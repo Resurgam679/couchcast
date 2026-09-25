@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lfV7npThuWyCkUWz8+8NBLMyyb2gVn4US+1w0TcS49A=' 'sha256-bjd3HNf8mx60E8Zgb3JF3H2NW/MnuXJp0v/0PJ1Cbn4=' 'sha256-QLi5FXZOX6sWWKLophy4e6SIvtuZ6Rn5HK0vL7mDVXM='; style-src 'sha256-rOsFA3+lJEEhscr2gzk0pOYG2j4KQ0t7AjYzjw1gHUw='; img-src data:; media-src blob: mediastream:; connect-src ws: wss: http: https:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lfV7npThuWyCkUWz8+8NBLMyyb2gVn4US+1w0TcS49A=' 'sha256-bjd3HNf8mx60E8Zgb3JF3H2NW/MnuXJp0v/0PJ1Cbn4=' 'sha256-pqTRCGLU6nHep8DR+wZpMLa3nvZdGWC/0IEwSfrMIAQ='; style-src 'sha256-QyqlAhTAI6yhrS80fXRRY3sHbhdJ2v9waMi8WLqgiBE='; img-src data:; media-src blob: mediastream:; connect-src ws: wss: http: https:; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1d1622">
   <meta name="description" content="Watch a friend's game, streamed straight from their PC to your browser.">
@@ -363,6 +363,9 @@ body[data-view="watch"] .topbar { display: none; }
 .dialog-foot {
   display: flex; justify-content: flex-end; gap: 10px;
   padding: 16px 24px 22px;
+  /* Keeps the buttons in view when a short window makes the dialog scroll. */
+  position: sticky; bottom: 0;
+  background: var(--cushion);
 }
 
 .picker { width: min(980px, 92vw); }
@@ -649,10 +652,10 @@ body[data-view="watch"] .topbar { display: none; }
       <p class="help">A relay is only used when two PCs can't reach each other directly, such as on some school, work or mobile networks. One of you having it set up is enough.</p>
 
       <h3 class="app-only">Friends without the app</h3>
-      <p class="help app-only">Anyone can watch in a browser, on a Mac, Linux, a phone or a PC. The live screen saves an invite file you can send them. If you've put the web viewer online (see the README), add its address here to share links instead.</p>
+      <p class="help app-only">Anyone can watch in a browser, on a Mac, Linux, a phone or a PC. Invite links open the web viewer at this address. Leave it blank to use the usual one.</p>
       <label class="field app-only">
         <span>Web viewer address</span>
-        <input id="setWebUrl" placeholder="https://you.github.io/couchcast/" autocomplete="off" spellcheck="false">
+        <input id="setWebUrl" autocomplete="off" spellcheck="false">
       </label>
     </div>
     <div class="dialog-foot">
@@ -932,6 +935,10 @@ window.RTC = (() => {
   const inApp = !!couch;
   document.body.dataset.shell = inApp ? 'app' : 'web';
 
+  // The hosted web viewer that invite links open (dist-web/index.html, see the
+  // README). Settings can point links at a different copy.
+  const WEB_VIEWER = 'https://resurgam679.github.io/couchcast/';
+
   const ID_PREFIX = 'couchcast-v1-';
   const VIEWER_PREFIX = `${ID_PREFIX}w-`; // viewers pick their own ID, which saves a trip to the code server
   const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L
@@ -951,7 +958,7 @@ window.RTC = (() => {
     turnUrl: '',
     turnUser: '',
     turnPass: '',
-    webUrl: '', // where the web viewer is hosted, for invite links
+    webUrl: '', // blank = WEB_VIEWER
   };
 
   function loadSettings() {
@@ -1519,9 +1526,10 @@ window.RTC = (() => {
 
   // ---- inviting friends who don't have the app
   function inviteLink() {
-    if (!settings.webUrl || !host.code) return '';
+    const viewer = settings.webUrl || WEB_VIEWER;
+    if (!viewer || !host.code) return '';
     try {
-      const url = new URL(settings.webUrl);
+      const url = new URL(viewer);
       url.hash = host.code + (settings.signalUrl ? `&s=${encodeURIComponent(settings.signalUrl)}` : '');
       return url.href;
     } catch {
@@ -1853,6 +1861,7 @@ window.RTC = (() => {
     $('setTurnUser').value = settings.turnUser;
     $('setTurnPass').value = settings.turnPass;
     $('setWebUrl').value = settings.webUrl;
+    $('setWebUrl').placeholder = WEB_VIEWER;
     $('settings').showModal();
   }
 
@@ -1867,8 +1876,11 @@ window.RTC = (() => {
         return;
       }
     }
-    const webUrl = $('setWebUrl').value.trim();
-    if (webUrl && !/^https?:\/\/[^/]/i.test(webUrl)) {
+    let webUrl = $('setWebUrl').value.trim();
+    if (webUrl && !/^https?:\/\//i.test(webUrl)) webUrl = `https://${webUrl}`; // usually pasted without it
+    try {
+      if (webUrl) new URL(webUrl);
+    } catch {
       toast('The web viewer needs a full address, like https://you.github.io/couchcast/');
       $('setWebUrl').focus();
       return;
