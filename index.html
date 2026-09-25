@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lfV7npThuWyCkUWz8+8NBLMyyb2gVn4US+1w0TcS49A=' 'sha256-bjd3HNf8mx60E8Zgb3JF3H2NW/MnuXJp0v/0PJ1Cbn4=' 'sha256-pqTRCGLU6nHep8DR+wZpMLa3nvZdGWC/0IEwSfrMIAQ='; style-src 'sha256-QyqlAhTAI6yhrS80fXRRY3sHbhdJ2v9waMi8WLqgiBE='; img-src data:; media-src blob: mediastream:; connect-src ws: wss: http: https:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-lfV7npThuWyCkUWz8+8NBLMyyb2gVn4US+1w0TcS49A=' 'sha256-Z3vH6F/PWfKf1PGuWOsUfTkMBUTwsqBwurduARmf+Hk=' 'sha256-DEQkMmjjBzYbEaTJ3IQWQBxqVnRjQ55ejPqODLAGDU8='; style-src 'sha256-T+srOnXhg17skgfTxpLHqnnN3+hQ0kH99s7dVBFWBCE='; img-src data:; media-src blob: mediastream:; connect-src ws: wss: http: https:; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1d1622">
   <meta name="description" content="Watch a friend's game, streamed straight from their PC to your browser.">
@@ -224,6 +224,14 @@ body[data-view="watch"] .topbar { display: none; }
 .invite span { margin-right: 2px; }
 .invite .btn { color: var(--linen); }
 
+.host-actions { display: flex; align-items: center; gap: 10px; }
+.mic-btn { display: inline-flex; align-items: center; gap: 8px; }
+.mic-btn[aria-pressed="true"] { border-color: var(--lamp); color: var(--lamp); }
+/* Mic buttons (yours when hosting, and when watching) show a struck-out mic while muted. */
+.icon-mic-off,
+[aria-pressed="true"] > .icon-mic { display: none; }
+[aria-pressed="true"] > .icon-mic-off { display: block; }
+
 .host-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -275,6 +283,7 @@ body[data-view="watch"] .topbar { display: none; }
   background: var(--plum); border: 1px solid var(--seam); border-radius: var(--r-sm);
 }
 .field input:hover, .field select:hover { border-color: var(--dust); }
+.field input.range { padding: 0; border: 0; background: none; accent-color: var(--lamp); }
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 .check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
@@ -322,6 +331,9 @@ body[data-view="watch"] .topbar { display: none; }
 
 .volume { display: flex; align-items: center; gap: 4px; margin-right: 6px; }
 .volume input { width: 110px; accent-color: var(--lamp); }
+.voice-volume { gap: 8px; }
+.voice-volume span { font-size: 13px; color: rgba(239, 230, 220, 0.8); }
+.voice-volume input { width: 90px; }
 
 .hud-icon {
   display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
@@ -404,12 +416,12 @@ body[data-view="watch"] .topbar { display: none; }
 
 .picker-options {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr) auto;
-  gap: 18px; align-items: end;
+  grid-template-columns: 170px minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 14px 18px; align-items: end;
   margin: 12px 24px 0; padding-top: 18px;
   border-top: 1px solid var(--seam);
 }
-.picker-options .check { padding-bottom: 10px; }
+.picker-options .check { grid-column: 1 / -1; }
 
 .settings { width: min(560px, 92vw); }
 .settings-body { display: flex; flex-direction: column; gap: 14px; padding: 0 24px 4px; }
@@ -456,7 +468,7 @@ body[data-view="watch"] .topbar { display: none; }
   .hud-right { margin-left: auto; gap: 6px; }
   .hud-btn { padding: 7px 11px; }
   .volume { margin-right: 0; }
-  .volume input { display: none; }
+  .volume input, .voice-volume { display: none; }
   .watch-status { padding: 0 24px; font-size: 20px; text-align: center; }
 
   .dialog-head, .dialog-foot, .settings-body { padding-left: 18px; padding-right: 18px; }
@@ -523,7 +535,14 @@ body[data-view="watch"] .topbar { display: none; }
             <button id="saveInvite" class="btn btn-quiet btn-small">Save invite file</button>
           </div>
         </div>
-        <button id="stopBtn" class="btn btn-danger">End stream</button>
+        <div class="host-actions">
+          <button id="micBtn" class="btn btn-quiet mic-btn" aria-pressed="false" hidden>
+            <svg class="icon-mic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+            <svg class="icon-mic-off" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l16 16"/></svg>
+            <span class="mic-label">Mute mic</span>
+          </button>
+          <button id="stopBtn" class="btn btn-danger">End stream</button>
+        </div>
       </div>
 
       <div class="host-grid">
@@ -546,6 +565,14 @@ body[data-view="watch"] .topbar { display: none; }
             <span>Quality</span>
             <select id="liveQuality"></select>
           </label>
+          <label class="field">
+            <span>Microphone</span>
+            <select id="liveMic"></select>
+          </label>
+          <label class="field">
+            <span>Friends' voices</span>
+            <input type="range" id="hostVoiceVolume" class="range" min="0" max="100" step="1">
+          </label>
           <label class="check">
             <input type="checkbox" id="previewToggle">
             <span>Show preview <small>uses a little GPU</small></span>
@@ -559,6 +586,7 @@ body[data-view="watch"] .topbar { display: none; }
     <section id="view-watch" class="view watch" hidden>
       <div id="stage" class="stage">
         <video id="remote" autoplay playsinline></video>
+        <audio id="voice" autoplay></audio>
         <p id="watchStatus" class="watch-status" role="status">Connecting…</p>
         <button id="soundBtn" class="sound-prompt" hidden>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4Z"/></svg>
@@ -570,13 +598,21 @@ body[data-view="watch"] .topbar { display: none; }
             <div id="watchStats" class="stats-row" hidden></div>
           </div>
           <div class="hud-right">
+            <button id="talkBtn" class="hud-icon talk-btn" aria-pressed="false" aria-label="Mute your mic" title="Mute your mic" hidden>
+              <svg class="icon-mic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+              <svg class="icon-mic-off" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 4l16 16"/></svg>
+            </button>
             <div class="volume">
               <button id="muteBtn" class="hud-icon" aria-pressed="false" aria-label="Mute" title="Mute (M)">
                 <svg class="icon-sound" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4Z"/></svg>
                 <svg class="icon-muted" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="m16 9.5 5 5m0-5-5 5"/></svg>
               </button>
-              <input type="range" id="volume" min="0" max="100" step="1" aria-label="Volume">
+              <input type="range" id="volume" min="0" max="100" step="1" aria-label="Game volume" title="Game volume">
             </div>
+            <label id="voiceVolumeGroup" class="volume voice-volume" title="Voice volume" hidden>
+              <span>Voice</span>
+              <input type="range" id="voiceVolume" min="0" max="100" step="1">
+            </label>
             <button id="statsBtn" class="hud-btn" aria-pressed="false">Stats</button>
             <button id="fullBtn" class="hud-btn" title="Fullscreen (F)">Fullscreen</button>
             <button id="leaveBtn" class="hud-btn hud-leave">Leave</button>
@@ -605,6 +641,10 @@ body[data-view="watch"] .topbar { display: none; }
         <span>Video codec</span>
         <select id="pickCodec"></select>
       </label>
+      <label class="field">
+        <span>Microphone</span>
+        <select id="pickMic"></select>
+      </label>
       <label class="check">
         <input type="checkbox" id="pickAudio">
         <span id="pickAudioLabel">Share game audio</span>
@@ -628,6 +668,13 @@ body[data-view="watch"] .topbar { display: none; }
         <span>Give games priority over Couchcast
           <small>Runs Couchcast below normal CPU priority so your game always wins.</small></span>
       </label>
+
+      <h3>Voice chat</h3>
+      <label class="field">
+        <span>Microphone</span>
+        <select id="setMic"></select>
+      </label>
+      <p class="help">Everyone in a stream can talk and hear each other. Headphones stop your speakers leaking into your mic.</p>
 
       <h3>Connection</h3>
       <p class="help">Everyone needs the same code server. Leave it blank to use the free public one.</p>
@@ -730,7 +777,23 @@ window.RTC = (() => {
   // The host applies it to the viewer's answer, because that's what its encoder
   // reads. The viewer applies it to its own answer too, because that's what its
   // decoder reads (without it, Chromium and Safari play stereo as mono).
-  function tuneOpus(sdp) {
+  // Only the game-audio section (by its mid) is tuned; the voice channel keeps
+  // WebRTC's speech defaults. With no mid, the first audio section is tuned,
+  // which is what hosts from before the voice channel expect.
+  function tuneOpus(sdp, mid) {
+    const sections = sdp.split(/(?=\r\nm=)/);
+    const i = sections.findIndex((s, n) => {
+      if (n === 0 || !s.startsWith('\r\nm=audio')) return false;
+      if (mid == null) return true;
+      const m = s.match(/\r\na=mid:(\S+)/);
+      return !!m && m[1] === String(mid);
+    });
+    if (i === -1) return sdp;
+    sections[i] = tuneOpusSection(sections[i]);
+    return sections.join('');
+  }
+
+  function tuneOpusSection(sdp) {
     const match = sdp.match(/a=rtpmap:(\d+) opus\/48000\/2/i);
     if (!match) return sdp;
     const pt = match[1];
@@ -952,7 +1015,9 @@ window.RTC = (() => {
     quality: '1080p60',
     codec: 'video/H264',
     audio: true,
+    micId: '', // '' = default microphone, 'off' = none
     volume: 80,
+    voiceVolume: 100,
     lowPriority: true,
     signalUrl: '',
     turnUrl: '',
@@ -1094,6 +1159,214 @@ window.RTC = (() => {
     active: false,
   };
 
+  // ---- voice chat: open mics on their own channel beside the game audio.
+  // Everyone is connected to you, so you do the mixing: each friend's channel
+  // carries your mic plus every other friend, never their own voice, and you
+  // hear all of them.
+  const voice = {
+    ctx: null,
+    out: null, // friends' voices to your speakers
+    mic: null, // your mic: { track, source }
+    muted: false,
+    mixes: new Map(), // viewer id -> MediaStreamAudioDestinationNode (what they hear)
+    friends: new Map(), // viewer id -> { source, player } (what they say)
+  };
+
+  function voiceContext() {
+    if (!voice.ctx) {
+      voice.ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+      voice.out = voice.ctx.createGain();
+      voice.out.gain.value = settings.voiceVolume / 100;
+      voice.out.connect(voice.ctx.destination);
+    }
+    return voice.ctx;
+  }
+
+  // Only run the audio graph while there's something to mix.
+  function updateVoiceActivity() {
+    if (!voice.ctx) return;
+    if (voice.mic || voice.friends.size) voice.ctx.resume().catch(() => {});
+    else voice.ctx.suspend().catch(() => {});
+  }
+
+  function voiceMixFor(v) {
+    const dest = voiceContext().createMediaStreamDestination();
+    voice.mixes.set(v.id, dest);
+    if (voice.mic) voice.mic.source.connect(dest);
+    for (const f of voice.friends.values()) f.source.connect(dest);
+    updateVoiceActivity();
+    return dest.stream.getAudioTracks()[0];
+  }
+
+  function unplug(source, dest) {
+    try {
+      source.disconnect(dest);
+    } catch {
+      // Wasn't connected.
+    }
+  }
+
+  function dropVoiceMix(v) {
+    const dest = voice.mixes.get(v.id);
+    if (!dest) return;
+    voice.mixes.delete(v.id);
+    if (voice.mic) unplug(voice.mic.source, dest);
+    for (const f of voice.friends.values()) unplug(f.source, dest);
+    dest.stream.getTracks().forEach((t) => t.stop());
+  }
+
+  function addFriendVoice(v, track) {
+    removeFriendVoice(v);
+    const stream = new MediaStream([track]);
+    // Chromium only feeds a remote track into Web Audio while a media element
+    // is playing it, so keep a muted one running.
+    const player = new Audio();
+    player.muted = true;
+    player.srcObject = stream;
+    player.play().catch(() => {});
+    const source = voiceContext().createMediaStreamSource(stream);
+    source.connect(voice.out);
+    for (const [id, dest] of voice.mixes) if (id !== v.id) source.connect(dest);
+    voice.friends.set(v.id, { source, player });
+    updateVoiceActivity();
+  }
+
+  function removeFriendVoice(v) {
+    const f = voice.friends.get(v.id);
+    if (!f) return;
+    voice.friends.delete(v.id);
+    f.source.disconnect();
+    f.player.srcObject = null;
+    updateVoiceActivity();
+  }
+
+  async function listMics() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      // Windows also lists "default" and "communications" aliases; we offer our own default.
+      return devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+    } catch {
+      return [];
+    }
+  }
+
+  async function fillMicSelect(select, selected) {
+    const mics = await listMics();
+    select.textContent = '';
+    select.add(new Option('No microphone', 'off'));
+    select.add(new Option('Default microphone', ''));
+    mics.forEach((d, i) => select.add(new Option(d.label || `Microphone ${i + 1}`, d.deviceId)));
+    select.value = [...select.options].some((o) => o.value === selected) ? selected : '';
+  }
+
+  // A saved mic can vanish (unplugged, or a browser's per-site device IDs), so
+  // fall back to the default one.
+  async function openMic(id) {
+    const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: id ? { ...audio, deviceId: { exact: id } } : audio });
+    } catch (err) {
+      if (!id || err.name !== 'OverconstrainedError') throw err;
+      return navigator.mediaDevices.getUserMedia({ audio });
+    }
+  }
+
+  // Swaps the mic feeding every mix. No renegotiation: the mixes' tracks stay the same.
+  async function setMic(id) {
+    let next = null;
+    if (id !== 'off') {
+      const stream = await openMic(id);
+      const track = stream.getAudioTracks()[0];
+      if (!host.active) {
+        track.stop(); // the stream ended while the mic was starting
+        return;
+      }
+      track.contentHint = 'speech';
+      track.enabled = !voice.muted;
+      next = { track, source: voiceContext().createMediaStreamSource(stream) };
+    }
+    const prev = voice.mic;
+    voice.mic = next;
+    for (const dest of voice.mixes.values()) {
+      if (prev) unplug(prev.source, dest);
+      if (next) next.source.connect(dest);
+    }
+    if (prev) prev.track.stop();
+    updateVoiceActivity();
+    renderMic();
+  }
+
+  function setMicMuted(on) {
+    voice.muted = on;
+    if (voice.mic) voice.mic.track.enabled = !on;
+    renderMic();
+  }
+
+  function renderMic() {
+    const btn = $('micBtn');
+    btn.hidden = !voice.mic;
+    btn.setAttribute('aria-pressed', String(voice.muted));
+    btn.querySelector('.mic-label').textContent = voice.muted ? 'Unmute mic' : 'Mute mic';
+  }
+
+  function stopVoice() {
+    for (const dest of voice.mixes.values()) dest.stream.getTracks().forEach((t) => t.stop());
+    voice.mixes.clear();
+    for (const f of voice.friends.values()) f.player.srcObject = null;
+    voice.friends.clear();
+    if (voice.mic) voice.mic.track.stop();
+    voice.mic = null;
+    voice.muted = false;
+    if (voice.ctx) voice.ctx.close().catch(() => {});
+    voice.ctx = null;
+    voice.out = null;
+    renderMic();
+  }
+
+  // ---- per-app game audio: couchcast-audio.exe captures just the shared app
+  // (or, for a screen, everything except Couchcast, so voice chat played here
+  // can't echo back out). Its PCM reaches pcm-player.js on the audio thread
+  // straight from the main process, and comes out as an ordinary track.
+  const appAudio = { ctx: null, node: null, port: null };
+
+  window.addEventListener('message', (e) => {
+    if (e.source !== window || e.data !== 'couchcast:appaudio' || !e.ports[0]) return;
+    appAudio.port = e.ports[0];
+    connectAppAudioPort();
+  });
+
+  function connectAppAudioPort() {
+    if (!appAudio.node || !appAudio.port) return;
+    const port = appAudio.port;
+    appAudio.port = null;
+    appAudio.node.port.postMessage({ port }, [port]);
+  }
+
+  // Resolves to { track, mode } or throws if per-app capture isn't possible.
+  async function startAppAudio(sourceId) {
+    const ctx = new AudioContext({ sampleRate: 48000, latencyHint: 'interactive' });
+    appAudio.ctx = ctx;
+    await ctx.audioWorklet.addModule('pcm-player.js');
+    const node = new AudioWorkletNode(ctx, 'pcm-player', { numberOfInputs: 0, outputChannelCount: [2] });
+    const dest = ctx.createMediaStreamDestination();
+    node.connect(dest);
+    appAudio.node = node;
+    connectAppAudioPort();
+    const result = await couch.startAppAudio(sourceId);
+    if (!result || result.error) {
+      stopAppAudio();
+      throw new Error((result && result.error) || 'per-app audio is unavailable');
+    }
+    return { track: dest.stream.getAudioTracks()[0], mode: result.mode };
+  }
+
+  function stopAppAudio() {
+    if (!appAudio.ctx) return;
+    couch.stopAppAudio();
+    appAudio.ctx.close().catch(() => {});
+    Object.assign(appAudio, { ctx: null, node: null, port: null });
+  }
+
   // ---- source picker
   const picker = { tab: 'window', sources: [], chosen: null };
 
@@ -1116,9 +1389,8 @@ window.RTC = (() => {
     const canAudio = couch.platform === 'win32';
     $('pickAudio').checked = canAudio && settings.audio;
     $('pickAudio').disabled = !canAudio;
-    $('pickAudioLabel').textContent = canAudio
-      ? 'Share game audio (everything your PC plays)'
-      : 'Game audio sharing needs Windows';
+    renderAudioLabel();
+    fillMicSelect($('pickMic'), settings.micId);
 
     $('picker').showModal();
     try {
@@ -1135,7 +1407,16 @@ window.RTC = (() => {
     for (const b of document.querySelectorAll('#picker [role="tab"]')) {
       b.setAttribute('aria-selected', String(b.dataset.tab === tab));
     }
+    renderAudioLabel();
     renderPicker();
+  }
+
+  function renderAudioLabel() {
+    $('pickAudioLabel').textContent = couch.platform !== 'win32'
+      ? 'Game audio sharing needs Windows'
+      : picker.tab === 'window'
+        ? "Share the game's sound (just that app, nothing else on your PC)"
+        : "Share your PC's sound (everything except Couchcast)";
   }
 
   function renderPicker() {
@@ -1185,6 +1466,7 @@ window.RTC = (() => {
 
     settings.quality = $('pickQuality').value;
     settings.codec = $('pickCodec').value;
+    settings.micId = $('pickMic').value;
     if (!$('pickAudio').disabled) settings.audio = $('pickAudio').checked;
     saveSettings();
 
@@ -1194,22 +1476,37 @@ window.RTC = (() => {
     $('pickerGo').disabled = true;
     $('pickerError').textContent = '';
 
+    // Just the shared app's sound when possible. If per-app capture can't start,
+    // fall back to Chromium's loopback, which is everything the PC plays.
+    let sound = null;
+    if (withAudio) {
+      try {
+        sound = await startAppAudio(src.id);
+      } catch (err) {
+        console.warn('per-app audio unavailable; sharing all PC audio', err);
+      }
+    }
+    const loopback = withAudio && !sound;
+
     let stream = null;
     try {
-      await couch.selectSource({ id: src.id, name: src.name, audio: withAudio });
+      await couch.selectSource({ id: src.id, name: src.name, audio: loopback });
       stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: q.fps, max: q.fps }, height: { max: q.height } },
-        audio: withAudio
+        audio: loopback
           ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
           : false,
       });
     } catch (err) {
+      stopAppAudio();
       $('pickerError').textContent = `Couldn't start sharing “${src.name}”: ${err.message}`;
       $('pickerGo').disabled = false;
       return;
     } finally {
       couch.selectSource(null); // nothing else can grab the screen with this choice
     }
+    if (sound) stream.addTrack(sound.track);
+    if (loopback && src.kind === 'window') toast("Couldn't capture just that app's sound, so everything your PC plays is shared");
 
     const video = stream.getVideoTracks()[0];
     if (video && 'contentHint' in video) video.contentHint = 'motion';
@@ -1231,8 +1528,21 @@ window.RTC = (() => {
     $('copyCode').textContent = formatCode(host.code);
     renderInviteActions();
     $('srcName').textContent = src.name;
-    $('audioInfo').textContent = stream.getAudioTracks().length ? 'On' : 'Off';
+    $('audioInfo').textContent = !stream.getAudioTracks().length
+      ? 'Off'
+      : sound && sound.mode === 'app'
+        ? 'Just this app'
+        : sound
+          ? 'Everything except Couchcast'
+          : 'Everything your PC plays';
     fillQualitySelect($('liveQuality'), settings.quality);
+    // The mic is optional: if it fails, the stream carries on without it.
+    try {
+      await setMic(settings.micId);
+    } catch (err) {
+      toast(`Couldn't use your microphone: ${err.message}`);
+    }
+    fillMicSelect($('liveMic'), voice.mic ? settings.micId : 'off');
     $('encInfo').textContent = 'Starts when a friend joins';
     $('limitInfo').textContent = 'Nothing yet';
     $('uploadInfo').textContent = mbps(0);
@@ -1301,6 +1611,8 @@ window.RTC = (() => {
       name: cleanName(conn.metadata && conn.metadata.name),
       conn,
       pc: null,
+      gameAudio: null, // transceivers
+      voice: null,
       pendingIce: [],
       sample: null,
       stats: null,
@@ -1334,7 +1646,16 @@ window.RTC = (() => {
     for (const track of host.stream.getTracks()) {
       const tr = pc.addTransceiver(track, { direction: 'sendonly', streams: [host.stream] });
       if (track.kind === 'video') RTC.preferCodec(tr, settings.codec);
+      else v.gameAudio = tr;
     }
+    // Voice goes both ways on one channel, so a friend's mic can join later
+    // without renegotiating. Viewers from before voice existed just hear it
+    // mixed in with the game, since it's labelled as part of the same stream.
+    v.voice = pc.addTransceiver(voiceMixFor(v), { direction: 'sendrecv', streams: [host.stream] });
+    // Their voice, once their mic is on. (Viewers without voice never send one.)
+    pc.ontrack = (e) => {
+      if (e.transceiver === v.voice) addFriendVoice(v, e.track);
+    };
 
     pc.onicecandidate = (e) => {
       if (e.candidate) safeSend(v.conn, { t: 'ice', c: e.candidate.toJSON() });
@@ -1347,7 +1668,13 @@ window.RTC = (() => {
     };
 
     await pc.setLocalDescription(await pc.createOffer());
-    safeSend(v.conn, { t: 'offer', sdp: pc.localDescription.sdp, host: myName() });
+    safeSend(v.conn, {
+      t: 'offer',
+      sdp: pc.localDescription.sdp,
+      host: myName(),
+      audio: v.gameAudio ? v.gameAudio.mid : null, // which audio channel is the game
+      voice: v.voice.mid,
+    });
   }
 
   async function onHostMessage(v, msg) {
@@ -1356,7 +1683,8 @@ window.RTC = (() => {
       if (msg.t === 'answer' && typeof msg.sdp === 'string') {
         // Our encoders read their settings from the viewer's answer. Tuning it
         // here covers viewers whose browser won't let them tune it themselves.
-        const sdp = RTC.tuneOpus(RTC.tuneVideoStart(msg.sdp, host.quality.kbps));
+        let sdp = RTC.tuneVideoStart(msg.sdp, host.quality.kbps);
+        if (v.gameAudio) sdp = RTC.tuneOpus(sdp, v.gameAudio.mid);
         await v.pc.setRemoteDescription({ type: 'answer', sdp });
         for (const c of v.pendingIce.splice(0)) await v.pc.addIceCandidate(c).catch(() => {});
         await RTC.tuneSenders(v.pc, host.quality);
@@ -1377,6 +1705,8 @@ window.RTC = (() => {
       v.pc.close();
       v.pc = null;
     }
+    removeFriendVoice(v);
+    dropVoiceMix(v);
     setTimeout(() => {
       try { v.conn.close(); } catch { /* already closed */ }
     }, notify ? 300 : 0);
@@ -1491,6 +1821,17 @@ window.RTC = (() => {
     toast(`Quality set to ${q.label}`);
   }
 
+  async function changeLiveMic(id) {
+    try {
+      await setMic(id);
+      settings.micId = id;
+      saveSettings();
+    } catch (err) {
+      toast(`Couldn't switch microphone: ${err.message}`);
+      $('liveMic').value = voice.mic ? settings.micId : 'off';
+    }
+  }
+
   function setPreview(on) {
     const el = $('preview');
     el.hidden = !on;
@@ -1510,6 +1851,8 @@ window.RTC = (() => {
     clearInterval(host.statsTimer);
     if (host.stream) host.stream.getTracks().forEach((t) => t.stop());
     host.stream = null;
+    stopAppAudio();
+    stopVoice();
     $('previewToggle').checked = false;
     setPreview(false);
     const peer = host.peer;
@@ -1577,8 +1920,19 @@ window.RTC = (() => {
     timer: 0,
     timeout: 0,
     hostName: '',
+    media: null, // the game's video + audio, never voice
+    voiceMid: null, // which channel is voice (hosts before voice existed don't say)
+    voiceChannel: null, // its transceiver
+    mic: null, // your mic track, sent back on the voice channel
+    micMuted: false,
   };
   let baseTitle = document.title; // restored after watching
+  // iOS keeps volume under the hardware buttons and ignores it from script.
+  const volumeWorks = (() => {
+    const probe = document.createElement('video');
+    probe.volume = 0.5;
+    return probe.volume === 0.5;
+  })();
 
   function joinStream() {
     homeNotice('');
@@ -1664,7 +2018,10 @@ window.RTC = (() => {
     if (watch.pc) watch.pc.close();
     watch.pendingIce = [];
     watch.hostName = cleanName(msg.host);
+    watch.voiceMid = msg.voice == null ? null : String(msg.voice);
+    watch.media = new MediaStream();
     $('watchHost').textContent = `${watch.hostName}'s stream`;
+    $('voiceVolumeGroup').hidden = watch.voiceMid === null || !volumeWorks;
     document.title = `${watch.hostName}'s stream · Couchcast`;
 
     const pc = new RTCPeerConnection({ iceServers: RTC.iceServers(settings) });
@@ -1672,11 +2029,17 @@ window.RTC = (() => {
     watch.sample = RTC.statsSampler(pc);
 
     pc.ontrack = (e) => {
+      if (watch.voiceMid !== null && e.transceiver && e.transceiver.mid === watch.voiceMid) {
+        const el = $('voice');
+        el.srcObject = new MediaStream([e.track]);
+        playMedia(el);
+        return;
+      }
+      watch.media.addTrack(e.track);
       const video = $('remote');
-      const stream = e.streams[0] || new MediaStream([e.track]);
-      if (video.srcObject !== stream) {
-        video.srcObject = stream;
-        playRemote();
+      if (video.srcObject !== watch.media) {
+        video.srcObject = watch.media;
+        playMedia(video);
       }
     };
     pc.onicecandidate = (e) => {
@@ -1699,26 +2062,90 @@ window.RTC = (() => {
     };
 
     await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+    // Answering the voice channel two-way now means a mic can start sending on it
+    // later without renegotiating.
+    const voiceChannel = pc.getTransceivers().find((t) => t.mid === watch.voiceMid);
+    if (voiceChannel) voiceChannel.direction = 'sendrecv';
+    watch.voiceChannel = voiceChannel || null;
     for (const c of watch.pendingIce.splice(0)) await pc.addIceCandidate(c).catch(() => {});
     const answer = await pc.createAnswer();
     try {
-      await pc.setLocalDescription({ type: 'answer', sdp: RTC.tuneOpus(answer.sdp) });
+      // msg.audio names the game-audio channel: null means there isn't one, and
+      // hosts from before the voice channel don't send it (theirs is the first).
+      const sdp = msg.audio === null ? answer.sdp : RTC.tuneOpus(answer.sdp, msg.audio);
+      await pc.setLocalDescription({ type: 'answer', sdp });
     } catch {
       await pc.setLocalDescription(answer); // browsers that refuse edited SDP still play, just in mono
     }
     safeSend(watch.conn, { t: 'answer', sdp: pc.localDescription.sdp });
+    if (voiceChannel) startTalking(voiceChannel);
+  }
+
+  // Your mic, sent back to the host on the voice channel. Watching works the
+  // same without it (no mic, "No microphone" chosen, or permission refused).
+  async function startTalking(channel) {
+    stopTalking();
+    if (settings.micId === 'off' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    const pc = watch.pc;
+    let track;
+    try {
+      track = (await openMic(settings.micId)).getAudioTracks()[0];
+    } catch (err) {
+      toast(err.name === 'NotAllowedError'
+        ? "Your mic is blocked, so you can listen but they won't hear you"
+        : `Couldn't use your microphone: ${err.message}`);
+      return;
+    }
+    if (!watch.active || watch.pc !== pc) {
+      track.stop();
+      return;
+    }
+    track.contentHint = 'speech';
+    track.enabled = !watch.micMuted;
+    await channel.sender.replaceTrack(track);
+    watch.mic = track;
+    renderTalk();
+  }
+
+  function stopTalking() {
+    if (watch.mic) watch.mic.stop();
+    if (watch.mic && watch.voiceChannel) watch.voiceChannel.sender.replaceTrack(null).catch(() => {});
+    watch.mic = null;
+    renderTalk();
+  }
+
+  function setTalkMuted(on) {
+    watch.micMuted = on;
+    if (watch.mic) watch.mic.enabled = !on;
+    renderTalk();
+  }
+
+  function renderTalk() {
+    const btn = $('talkBtn');
+    btn.hidden = !watch.mic;
+    btn.setAttribute('aria-pressed', String(watch.micMuted));
+    btn.setAttribute('aria-label', watch.micMuted ? 'Unmute your mic' : 'Mute your mic');
+    btn.title = watch.micMuted ? 'Unmute your mic' : 'Mute your mic';
   }
 
   // Browsers only allow sound without a click once the page has been used.
   // If this one refuses, play muted and offer a button to turn sound on.
-  function playRemote() {
-    const video = $('remote');
-    video.play().catch((err) => {
-      if (err.name !== 'NotAllowedError' || video.muted) return;
-      setMuted(true);
-      $('soundBtn').hidden = false;
-      video.play().catch(() => {});
+  function playMedia(el) {
+    el.play().catch((err) => {
+      if (err.name !== 'NotAllowedError') return;
+      if (!el.muted) {
+        setMuted(true);
+        $('soundBtn').hidden = false;
+      }
+      el.play().catch(() => {});
     });
+  }
+
+  // After a mute is lifted, start anything the browser held back.
+  function resumeMedia() {
+    for (const el of [$('remote'), $('voice')]) {
+      if (!el.muted && el.paused && el.srcObject) el.play().catch(() => {});
+    }
   }
 
   function setWatchStatus(text) {
@@ -1737,11 +2164,18 @@ window.RTC = (() => {
     try { if (conn) conn.close(); } catch { /* ignore */ }
     if (pc) pc.close();
     if (peer) peer.destroy();
-    const video = $('remote');
-    video.pause();
-    video.srcObject = null;
+    for (const el of [$('remote'), $('voice')]) {
+      el.pause();
+      el.srcObject = null;
+    }
+    watch.media = null;
+    watch.voiceMid = null;
+    stopTalking();
+    watch.voiceChannel = null;
+    watch.micMuted = false;
+    $('voiceVolumeGroup').hidden = true;
     $('soundBtn').hidden = true;
-    setMuted(settings.volume === 0);
+    setMuted(false);
     document.title = baseTitle;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     show('home');
@@ -1821,17 +2255,31 @@ window.RTC = (() => {
     else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iPhone: only video can go fullscreen
   }
 
+  const level = (value) => Math.max(0, Math.min(100, Number(value)));
+
   function setVolume(value) {
-    const v = Math.max(0, Math.min(100, Number(value)));
+    const v = level(value);
     settings.volume = v;
     saveSettings();
     $('remote').volume = v / 100;
     $('volume').value = String(v);
-    setMuted(v === 0);
   }
 
+  // How loud other people's voices are, whether watching or hosting.
+  function setVoiceVolume(value) {
+    const v = level(value);
+    settings.voiceVolume = v;
+    saveSettings();
+    $('voice').volume = v / 100;
+    $('voiceVolume').value = String(v);
+    $('hostVoiceVolume').value = String(v);
+    if (voice.out) voice.out.gain.value = v / 100;
+  }
+
+  // Mutes everything you hear: the game and the voices.
   function setMuted(on) {
     $('remote').muted = on;
+    $('voice').muted = on;
     const btn = $('muteBtn');
     btn.setAttribute('aria-pressed', String(on));
     btn.setAttribute('aria-label', on ? 'Unmute' : 'Mute');
@@ -1840,17 +2288,14 @@ window.RTC = (() => {
   }
 
   function toggleMute() {
-    const video = $('remote');
-    if (video.muted && settings.volume === 0) setVolume(DEFAULTS.volume);
-    else setMuted(!video.muted);
-    if (!video.muted && video.paused && video.srcObject) video.play().catch(() => {});
-    toast(video.muted ? 'Muted' : 'Sound on');
+    setMuted(!$('remote').muted);
+    resumeMedia();
+    toast($('remote').muted ? 'Muted' : 'Sound on');
   }
 
   function turnOnSound() {
-    const video = $('remote');
     setMuted(false);
-    if (video.paused && video.srcObject) video.play().catch(() => {});
+    resumeMedia();
   }
 
   // =============================================================== SETTINGS
@@ -1862,6 +2307,7 @@ window.RTC = (() => {
     $('setTurnPass').value = settings.turnPass;
     $('setWebUrl').value = settings.webUrl;
     $('setWebUrl').placeholder = WEB_VIEWER;
+    fillMicSelect($('setMic'), settings.micId);
     $('settings').showModal();
   }
 
@@ -1891,9 +2337,18 @@ window.RTC = (() => {
     settings.turnUser = $('setTurnUser').value.trim();
     settings.turnPass = $('setTurnPass').value;
     settings.webUrl = webUrl;
+    const micId = $('setMic').value;
+    const micChanged = micId !== settings.micId;
+    settings.micId = micId;
     saveSettings();
     if (couch) couch.setLowPriority(settings.lowPriority);
     if (host.active) renderInviteActions();
+    // A different mic takes effect right away.
+    if (micChanged && host.active) {
+      $('liveMic').value = micId;
+      changeLiveMic(micId);
+    }
+    if (micChanged && watch.active && watch.voiceChannel) startTalking(watch.voiceChannel);
     $('settings').close();
     toast(host.active || watch.active ? 'Settings saved. Connection changes apply next time.' : 'Settings saved');
   }
@@ -1929,7 +2384,9 @@ window.RTC = (() => {
     $('copyLink').addEventListener('click', copyLink);
     $('saveInvite').addEventListener('click', saveInvite);
     $('stopBtn').addEventListener('click', () => stopHosting(''));
+    $('micBtn').addEventListener('click', () => setMicMuted(!voice.muted));
     $('liveQuality').addEventListener('change', (e) => changeLiveQuality(e.target.value));
+    $('liveMic').addEventListener('change', (e) => changeLiveMic(e.target.value));
     $('previewToggle').addEventListener('change', (e) => setPreview(e.target.checked));
 
     $('leaveBtn').addEventListener('click', () => leaveStream(''));
@@ -1937,7 +2394,17 @@ window.RTC = (() => {
     $('statsBtn').addEventListener('click', toggleStats);
     $('muteBtn').addEventListener('click', toggleMute);
     $('soundBtn').addEventListener('click', turnOnSound);
-    $('volume').addEventListener('input', (e) => setVolume(e.target.value));
+    // Moving a slider while muted means you want to hear it.
+    $('volume').addEventListener('input', (e) => {
+      setVolume(e.target.value);
+      if ($('remote').muted) turnOnSound();
+    });
+    $('voiceVolume').addEventListener('input', (e) => {
+      setVoiceVolume(e.target.value);
+      if ($('voice').muted) turnOnSound();
+    });
+    $('talkBtn').addEventListener('click', () => setTalkMuted(!watch.micMuted));
+    $('hostVoiceVolume').addEventListener('input', (e) => setVoiceVolume(e.target.value));
     $('stage').addEventListener('pointermove', wakeHud);
     $('stage').addEventListener('pointerdown', wakeHud); // touch screens have no hover
     $('stage').addEventListener('dblclick', (e) => {
@@ -1970,11 +2437,8 @@ window.RTC = (() => {
       leaveStream('');
     });
 
-    // iOS keeps volume under the hardware buttons and ignores it from script,
-    // so there the speaker button only mutes.
-    const probe = document.createElement('video');
-    probe.volume = 0.5;
-    if (probe.volume !== 0.5) $('volume').hidden = true;
+    // Where volume can't be set from script (iOS), the speaker button only mutes.
+    if (!volumeWorks) $('volume').hidden = true;
 
     // A new invite link pasted into an open tab only changes the part after #.
     window.addEventListener('hashchange', () => {
@@ -1984,6 +2448,7 @@ window.RTC = (() => {
     });
 
     setVolume(settings.volume);
+    setVoiceVolume(settings.voiceVolume);
     if (couch) couch.setLowPriority(settings.lowPriority);
     applyInvite();
     show('home');
